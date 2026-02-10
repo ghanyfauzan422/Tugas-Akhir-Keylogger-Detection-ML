@@ -12,11 +12,17 @@ Ensure the following security measures are in place:
 
 import os
 import uuid
+import logging
 from datetime import datetime
 from flask import Flask, request, render_template, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+# Note: The fallback generates a new key on each restart. For production, ALWAYS set SECRET_KEY env var.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -62,7 +68,13 @@ def upload_file():
         name, ext = os.path.splitext(original_filename)
         filename = f"{name}_{timestamp}_{unique_id}{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Log warning for executable files
+        if ext.lower() in ['.exe', '.dll']:
+            logger.warning(f"SECURITY: Executable file uploaded: {filename}. Ensure analysis is done in sandboxed environment.")
+        
         file.save(filepath)
+        logger.info(f"File uploaded successfully: {filename}")
         flash(f'File "{original_filename}" uploaded successfully as "{filename}"!', 'success')
         return redirect(url_for('index'))
     else:

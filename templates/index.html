@@ -248,7 +248,11 @@
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                fileInput.files = files;
+                // Use DataTransfer to properly set files on input element
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                fileInput.files = dt.files;
+                
                 fileName.textContent = files[0].name;
                 selectedFile.classList.add('show');
                 submitBtn.classList.add('show');
