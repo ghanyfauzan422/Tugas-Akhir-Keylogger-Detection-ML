@@ -1,9 +1,23 @@
+"""
+Flask application for file upload in Keylogger Detection ML system.
+
+SECURITY NOTE: This application accepts executable files (exe, dll) for malware analysis.
+Ensure the following security measures are in place:
+1. The uploads directory should have no execute permissions
+2. Files should be analyzed in a sandboxed environment
+3. Never execute uploaded files directly on the server
+4. Consider integrating antivirus scanning before processing
+5. Use environment-based configuration for production deployment
+"""
+
 import os
+import uuid
+from datetime import datetime
 from flask import Flask, request, render_template, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24).hex())
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'txt', 'log', 'csv', 'json', 'exe', 'dll'}
@@ -41,10 +55,15 @@ def upload_file():
     
     # Validate and save file
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+        original_filename = secure_filename(file.filename)
+        # Add timestamp and UUID to prevent file overwrites
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_id = str(uuid.uuid4())[:8]
+        name, ext = os.path.splitext(original_filename)
+        filename = f"{name}_{timestamp}_{unique_id}{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
-        flash(f'File "{filename}" uploaded successfully!', 'success')
+        flash(f'File "{original_filename}" uploaded successfully as "{filename}"!', 'success')
         return redirect(url_for('index'))
     else:
         flash('Invalid file type. Allowed types: txt, log, csv, json, exe, dll', 'error')
@@ -52,4 +71,8 @@ def upload_file():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get configuration from environment variables
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    host = os.environ.get('FLASK_HOST', '127.0.0.1')
+    port = int(os.environ.get('FLASK_PORT', '5000'))
+    app.run(debug=debug_mode, host=host, port=port)

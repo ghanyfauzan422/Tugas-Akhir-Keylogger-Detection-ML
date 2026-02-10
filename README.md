@@ -42,8 +42,43 @@ http://localhost:5000
 
 ### Configuration
 
-Edit `app.py` to customize:
-- `SECRET_KEY`: Change the secret key for production use
+Edit `app.py` or set environment variables to customize:
+
+**Environment Variables:**
+- `SECRET_KEY`: Secret key for Flask sessions (required for production)
+- `FLASK_DEBUG`: Set to 'true' to enable debug mode (default: 'false')
+- `FLASK_HOST`: Host to bind to (default: '127.0.0.1')
+- `FLASK_PORT`: Port to bind to (default: '5000')
+
+**Application Settings:**
 - `UPLOAD_FOLDER`: Directory where uploaded files are stored
 - `MAX_CONTENT_LENGTH`: Maximum allowed file size
-- `ALLOWED_EXTENSIONS`: Allowed file extensions 
+- `ALLOWED_EXTENSIONS`: Allowed file extensions
+
+**Example for development:**
+```bash
+export FLASK_DEBUG=true
+export FLASK_HOST=0.0.0.0
+export FLASK_PORT=5000
+export SECRET_KEY=your-secret-key-here
+python app.py
+```
+
+### Security Considerations
+
+⚠️ **Important Security Notes:**
+1. **Executable Files**: This application accepts executable files (exe, dll) for malware analysis
+   - Ensure the uploads directory has NO execute permissions
+   - Never execute uploaded files directly on the server
+   - Analyze files in a sandboxed/isolated environment only
+   
+2. **Production Deployment**:
+   - Always set a strong `SECRET_KEY` environment variable
+   - Run with `FLASK_DEBUG=false` in production
+   - Use a production WSGI server (gunicorn, uWSGI) instead of Flask development server
+   - Consider adding antivirus scanning integration
+   
+3. **File Storage**:
+   - Files are saved with timestamps and UUIDs to prevent overwrites
+   - Regular cleanup of old files is recommended
+   - Monitor disk space usage 
